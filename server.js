@@ -4,6 +4,9 @@ const debug = require('debug')('app');
 const morgan = require('morgan');
 const path = require('path');
 const bodyParser = require('body-parser');
+const passport = require('passport');
+const cookieParser = require('cookie-parser');
+const expresSession = require('express-session');
 
 // Declare constats required
 const app = express();
@@ -21,9 +24,18 @@ const nav = [
 // Use Midddlewares
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(expresSession({ secret: 'kennedyAmelia' }));
 app.use(morgan('tiny'));
 
-const userRoute = require('./src/routes');
+// Require local modules
+require('./src/config/passport')(app);
+
+const {
+  authRoute, adminRoute, bookRoute
+} = require('./src/routes');
+
+const authRouter = authRoute(nav);
 
 // Use static files
 app.use(express.static(path.join(__dirname, '/public')));
@@ -33,7 +45,9 @@ app.use('/js', express.static(path.join(__dirname, 'node_modules/jquery/dist')))
 app.use('/js', express.static(path.join(__dirname, 'node_modules/popper.js/dist')));
 
 // Use Route
-app.use('/api/user/', userRoute);
+app.use('/', authRouter);
+app.use('/', adminRoute);
+app.use('/', bookRoute);
 
 // Set the template engine
 app.set('views', './src/views');
@@ -42,7 +56,7 @@ app.set('view engine', 'ejs');
 // Home Template
 app.get('/', (req, res) => {
   res.render('index', {
-    title: 'Amelia analytics',
+    title: 'Analytics',
     nav
   });
 });
